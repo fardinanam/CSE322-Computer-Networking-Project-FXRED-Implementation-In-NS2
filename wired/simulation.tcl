@@ -1,9 +1,9 @@
-if {$argc != 2} {
-    puts "Usage: ns $argv0 <number_of_nodes> <number_of_flows>"
+if {$argc != 3} {
+    puts "Usage: ns $argv0 <number_of_nodes> <number_of_flows> <packets_per_second>"
     exit 1
 }
 
-if {[lindex $argv 0] < 4 || [lindex $argv 1] % 2} {
+if {[lindex $argv 0] < 4 || [lindex $argv 0] % 2} {
     puts "Number of nodes must be even and at least 4"
     exit 1
 }
@@ -14,20 +14,33 @@ set ns [new Simulator]
 # define options
 set val(nn) [lindex $argv 0]
 set val(nf) [lindex $argv 1]
+set val(pktpersec) [lindex $argv 2]
 set val(qlimit) 30
 set val(tstart) 0.5
 set val(tend) 10
 #======================
 
+Queue/RED set thresh_ 5
+Queue/RED set maxthresh_ 15
+Queue/RED set q_weight_ 0.001
+Queue/RED set bytes_ false
+Queue/RED set queue_in_bytes_ false
+Queue/RED set gentle_ false
+Queue/RED set mean_pktsize_ 1000
+Queue/RED set fxred_ false
+Queue/RED set c_ 2.1
+
 set namFile [open animation.nam w]
 $ns namtrace-all $namFile
+set traceFile [open trace.tr w]
+$ns trace-all $traceFile
 
 set node_(r1) [$ns node]
 set node_(r2) [$ns node]
 
 set val(nn) [expr {$val(nn) - 2}]
 
-puts "Number of nodes: $val(nn)"
+# puts "Number of nodes: $val(nn)"
 
 for {set i 0} {$i < [expr {$val(nn) / 2}]} {incr i} {
     set node_(s$i) [$ns node]
@@ -52,6 +65,7 @@ for {set i 0} {$i < $val(nf)} {incr i} {
     set dest [expr int(rand() * ($val(nn)/2))]
     set tcp_($i) [$ns create-connection TCP/Reno $node_(s$source) TCPSink $node_(d$dest) $i]
     $tcp_($i) set window_ 15
+    $tcp_($i) set packetRate_ $val(pktpersec)
 
     set ftp_($i) [$tcp_($i) attach-source FTP]
 }

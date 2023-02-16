@@ -1,12 +1,12 @@
 #!/usr/bin/bash
 
 # Baseline parameters
-areaSize=500
+pktspersec=200
 nn=40
 nf=20
 
 # ns file
-nsFile="wireless-random.tcl"
+nsFile="simulation.tcl"
 
 # awk file
 awkFile="parse.awk"
@@ -20,14 +20,14 @@ true > $resultFile
 
 # Vary area size and show results
 echo "=================" >> $resultFile
-echo "varying area size" >> $resultFile
+echo "varying packets per sec" >> $resultFile
 for i in {1..5}; do  
-    val=$((i*250))
+    val=$((i*100))
     
     echo "---------------" >> $resultFile
-    echo "Area Size: $val" >> $resultFile
+    echo "Packets Per Sec: $val" >> $resultFile
    
-    ns $nsFile $val $val $nn $nf
+    ns $nsFile $nn $nf $val 
     awk -f $awkFile < trace.tr >> $resultFile
 done
 
@@ -40,7 +40,7 @@ for i in {1..5}; do
     echo "---------------------" >> $resultFile
     echo "Number of Nodes: $val" >> $resultFile
 
-    ns $nsFile $areaSize $areaSize $val $nf
+    ns $nsFile $val $nf $pktspersec
     awk -f $awkFile < trace.tr >> $resultFile
 done
 
@@ -53,7 +53,7 @@ for i in {1..5}; do
     echo "---------------------" >> $resultFile
     echo "Number of Flows: $val" >> $resultFile
     
-    ns $nsFile $areaSize $areaSize $nn $val
+    ns $nsFile $nn $val $pktspersec
     awk -f $awkFile < trace.tr >> $resultFile
 done
 

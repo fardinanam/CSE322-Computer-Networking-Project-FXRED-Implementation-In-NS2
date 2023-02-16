@@ -52,8 +52,8 @@ if __name__ == "__main__":
     if not os.path.isdir('graphs'):
         os.mkdir('graphs')
 
-    varyingParamIdx = -1 # area = 1, no. of nodes = 2, no. of flows = 3
-    areaSizes = []
+    varyingParamIdx = -1 # packets per sec = 1, no. of nodes = 2, no. of flows = 3
+    pktspersec = []
     nodes = []
     flows = []
 
@@ -73,8 +73,8 @@ if __name__ == "__main__":
                 xs = []
                 
                 if varyingParamIdx == 1:
-                    varyingParam = 'Area Size'
-                    xs = areaSizes
+                    varyingParam = 'Packets Per Second'
+                    xs = pktspersec
                 elif varyingParamIdx == 2:
                     varyingParam = 'Number of Nodes'
                     xs = nodes
@@ -89,9 +89,9 @@ if __name__ == "__main__":
                 avgDelay = []
                 deliveryRatio = []
                 dropRatio = []
-            elif line.startswith('Area Size'):
+            elif line.startswith('Packets Per Sec'):
                 # print(line, line.split(sep=" ")[-1])
-                areaSizes.append(int(line.split(sep=" ")[-1]))
+                pktspersec.append(int(line.split(sep=" ")[-1]))
             elif line.startswith('Number of Nodes'):
                 nodes.append(int(line.split(sep=" ")[-1]))
             elif line.startswith('Number of Flows'):

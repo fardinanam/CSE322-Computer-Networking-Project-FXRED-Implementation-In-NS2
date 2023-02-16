@@ -39,6 +39,17 @@ set val(qmaxthresh)     30
 set val(qweight)        0.002
 set val(qminpcksize)    1000
 #===============================================================================
+
+
+# Set RED queue parameters
+Queue/RED set thresh_ $val(qthresh)
+Queue/RED set maxthresh_ $val(qmaxthresh)
+Queue/RED set q_weight_ $val(qweight)
+Queue/RED set bytes_ false
+Queue/RED set queue_in_bytes_ false
+Queue/RED set gentle_ false
+Queue/RED set min_pcksize_ $val(qminpcksize)
+
 #trace file
 set traceFile [open trace.tr w]
 $ns trace-all $traceFile
@@ -76,15 +87,6 @@ $ns node-config -adhocRouting $val(rp) \
         -txPower 31.32e-3 \
         -idlePower 712e-6 \
         -sleepPower 144e-9 
-
-# Set RED queue parameters
-Queue/RED set thresh_ $val(qthresh)
-Queue/RED set maxthresh_ $val(qmaxthresh)
-Queue/RED set q_weight_ $val(qweight)
-Queue/RED set bytes_ false
-Queue/RED set queue_in_bytes_ false
-Queue/RED set gentle_ false
-Queue/RED set min_pcksize_ $val(qminpcksize)
 
 # Generate nodes at random positions
 set points []
