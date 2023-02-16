@@ -155,14 +155,6 @@ REDQueue::REDQueue(const char * trace) : link_(NULL), de_drop_(NULL), EDTrace(NU
 
 	q_ = new PacketQueue();			    // underlying queue
 	pq_ = q_;
-
-	// initialize fxred
-	if (edp_.fxred)
-	{
-		printf("fxred enabled\n");
-		edv_.count = -1;
-	}
-
 	//reset();
 #ifdef notdef
 	print_edp();

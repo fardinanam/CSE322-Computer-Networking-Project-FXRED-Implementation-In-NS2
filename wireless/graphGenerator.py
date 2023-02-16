@@ -2,8 +2,6 @@ import matplotlib.pyplot as plt
 import sys
 import os
 
-graph_folder = 'fxred_graphs'
-
 def plotGraph(xs, ys, xLabel : str, yLabel : str, title : str, fileName : str):
     fig, ax = plt.subplots()
     ax.plot(xs, ys, color="blue", linestyle='dashed')
@@ -18,7 +16,7 @@ def plotGraph(xs, ys, xLabel : str, yLabel : str, title : str, fileName : str):
     ax.set_ylabel(yLabel)
     
     # save the plot as a file
-    fig.savefig(graph_folder + '/' +fileName)
+    fig.savefig('fxred_graphs/'+fileName)
     
     # close the plot file
     plt.close(fig)
@@ -51,8 +49,8 @@ if __name__ == "__main__":
         print("Usage: python3 graphGenerator.py <input_file>")
         exit(1)
     
-    if not os.path.isdir(graph_folder):
-        os.mkdir(graph_folder)
+    if not os.path.isdir('fxred_graphs'):
+        os.mkdir('fxred_graphs')
 
     varyingParamIdx = -1 # packets per sec = 1, no. of nodes = 2, no. of flows = 3
     pktspersec = []

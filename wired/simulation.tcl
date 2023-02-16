@@ -27,8 +27,8 @@ Queue/RED set bytes_ false
 Queue/RED set queue_in_bytes_ false
 Queue/RED set gentle_ false
 Queue/RED set mean_pktsize_ 1000
-Queue/RED set fxred_ false
-Queue/RED set c_ 2.1
+Queue/RED set fxred_ true
+Queue/RED set c_ 2
 
 set namFile [open animation.nam w]
 $ns namtrace-all $namFile

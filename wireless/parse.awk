@@ -62,16 +62,16 @@ END {
     deliveryRatio = (receivedPackets / sentPackets);
     dropRatio = (droppedPackets / sentPackets);
 
-    print "Simulation Time: ", simTime;
-    print "Total Packets Sent: ", sentPackets;
-    print "Total Packets Received: ", receivedPackets;
-    print "Total Packets Dropped: ", droppedPackets;
+    # print "Simulation Time: ", simTime;
+    # print "Total Packets Sent: ", sentPackets;
+    # print "Total Packets Received: ", receivedPackets;
+    # print "Total Packets Dropped: ", droppedPackets;
 
-    print "------------------------------------------------------";
-    print "Throughput:", throughput, "bits/sec";
-    print "Average Delay:", avgDelay, "sec";
-    print "Delivery Ratio:", deliveryRatio;
-    print "Drop Ratio:", dropRatio;
+    # print "------------------------------------------------------";
+    # print "Throughput:", throughput, "bits/sec";
+    # print "Average Delay:", avgDelay, "sec";
+    # print "Delivery Ratio:", deliveryRatio;
+    # print "Drop Ratio:", dropRatio;
 
-    # print throughput, avgDelay, deliveryRatio, dropRatio;
+    print throughput, avgDelay, deliveryRatio, dropRatio;
 }
