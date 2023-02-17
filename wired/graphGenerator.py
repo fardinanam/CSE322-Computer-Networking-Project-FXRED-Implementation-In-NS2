@@ -61,7 +61,7 @@ def makeTitleAndCreateGraphs(data1 : dict, data2 : dict):
     plotGraph(xs, avgDelay1, avgDelay2, xLabel, yLabel, title, title+'.png')
 
     yLabel = 'Delivery Ratio'
-    title = yLabel + ' vs ' + varyingParam
+    title = yLabel + ' vs ' + xLabel
     plotGraph(xs, deliveryRatio1, deliveryRatio2, xLabel, yLabel, title, title+'.png')
 
     yLabel = 'Drop Ratio'

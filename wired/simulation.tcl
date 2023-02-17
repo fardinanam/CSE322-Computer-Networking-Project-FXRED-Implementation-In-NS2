@@ -21,6 +21,7 @@ set val(redtype) [lindex $argv 0]
 set val(nn) [lindex $argv 1]
 set val(nf) [lindex $argv 2]
 set val(pktpersec) [lindex $argv 3]
+set val(pktsize) 1000
 set val(qlimit) 30
 set val(tstart) 0.5
 set val(tend) 10
@@ -32,7 +33,7 @@ Queue/RED set q_weight_ 0.001
 Queue/RED set bytes_ false
 Queue/RED set queue_in_bytes_ false
 Queue/RED set gentle_ false
-Queue/RED set mean_pktsize_ 1000
+Queue/RED set mean_pktsize_ $val(pktsize)
 Queue/RED set fxred_ $val(redtype)
 Queue/RED set c_ 2
 
@@ -47,6 +48,8 @@ set node_(r2) [$ns node]
 set val(nn) [expr {$val(nn) - 2}]
 
 # puts "Number of nodes: $val(nn)"
+
+expr srand(87)
 
 for {set i 0} {$i < [expr {$val(nn) / 2}]} {incr i} {
     set node_(s$i) [$ns node]
@@ -70,18 +73,22 @@ for {set i 0} {$i < $val(nf)} {incr i} {
     set source [expr int(rand() * ($val(nn)/2))]
     set dest [expr int(rand() * ($val(nn)/2))]
     set tcp_($i) [$ns create-connection TCP/Reno $node_(s$source) TCPSink $node_(d$dest) $i]
-    $tcp_($i) set window_ 15
-    $tcp_($i) set packetRate_ $val(pktpersec)
+    $tcp_($i) set rate_ $val(pktpersec)
 
     set ftp_($i) [$tcp_($i) attach-source FTP]
-}
+    # set udp_($i) [new Agent/UDP]
+    # $ns attach-agent $node_(s$source) $udp_($i)
+    
+    # set cbr_($i) [new Application/Traffic/CBR]
+    # $cbr_($i) set PacketSize_ $val(pktsize)
+    # $cbr_($i) set rate_ $val(pktpersec)
+    # $cbr_($i) attach-agent $udp_($i)
 
-# # Tracing a queue
-# set redq [[$ns link $node_(r1) $node_(r2)] queue]
-# set tchan_ [open all.q w]
-# $redq trace curq_
-# $redq trace ave_
-# $redq attach $tchan_
+    # set sink_($i) [new Agent/Null]
+    # $ns attach-agent $node_(d$dest) $sink_($i)
+
+    # $ns connect $udp_($i) $sink_($i)
+}
 
 for {set i 0} {$i < $val(nf)} {incr i} {
     $ns at $val(tstart) "$ftp_($i) start"
@@ -92,35 +99,6 @@ $ns at $val(tend) "finish"
 
 # Define 'finish' procedure (include post-simulation processes)
 proc finish {} {
-    # global tchan_
-    # set awkCode {
-	# {
-	#     if ($1 == "Q" && NF>2) {
-	# 	print $2, $3 >> "temp.q";
-	# 	set end $2
-	#     }
-	#     else if ($1 == "a" && NF>2)
-	#     print $2, $3 >> "temp.a";
-	# }
-    # }
-    # set f [open temp.queue w]
-    # puts $f "TitleText: red"
-    # puts $f "Device: Postscript"
-    
-    # if { [info exists tchan_] } {
-	# close $tchan_
-    # }
-    # exec rm -f temp.q temp.a 
-    # exec touch temp.a temp.q
-    
-    # exec awk $awkCode all.q
-    
-    # puts $f \"queue
-    # exec cat temp.q >@ $f  
-    # puts $f \n\"ave_queue
-    # exec cat temp.a >@ $f
-    # close $f
-    # exec xgraph -bb -tk -x time -y queue temp.queue &
     exit 0
 }
 

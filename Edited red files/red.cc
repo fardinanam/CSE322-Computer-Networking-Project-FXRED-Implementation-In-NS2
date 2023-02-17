@@ -304,8 +304,9 @@ void REDQueue::reset()
 	 
 	edv_.v_ave = 0.0;
 	edv_.v_slope = 0.0;
-	if (edp_.fxred)
+	if (edp_.fxred) {
 		edv_.count = -1;
+	}
 	else
 		edv_.count = 0;
 	edv_.count_bytes = 0;
@@ -716,8 +717,10 @@ void REDQueue::enque(Packet* pkt)
 		else
 			m = int(edp_.ptc * (now - idletime_));
 		
-		if (edp_.fxred)
+		if (edp_.fxred) {
 			edv_.count = -1;
+			edv_.count_bytes = 0;
+		}
 	}
 
 	edv_.v_ave = estimator(q_->length(), m + 1, edv_.v_ave, edp_.q_w);
@@ -785,8 +788,10 @@ void REDQueue::enque(Packet* pkt)
 		/* No packets are being dropped.  */
 		edv_.v_prob = 0.0;
 		edv_.old = 0;
-		if (edp_.fxred)
+		if (edp_.fxred) {
 			edv_.count = -1;
+			edv_.count_bytes = 0;
+		}
 	}
 
 	if (qlen >= qlim)

@@ -21,7 +21,7 @@ for (( k=0; k<${#resultFiles[@]}; k++ )); do
 
     true > "$resultFile"
 
-    # Vary area size and show results
+    # Vary packets per sec and show results
     echo "=================" >> "$resultFile"
     echo "varying packets per sec" >> "$resultFile"
     for i in {1..5}; do  

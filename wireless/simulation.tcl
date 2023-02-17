@@ -5,8 +5,13 @@
 #Node Positioning: Random	
 #Flow: 1 Source, Random Sink
 
-if {$argc != 4} {
-    puts "Usage: ns $argv0 <area_length> <area_width> <number_of_nodes> <number_of_flows>"
+if {$argc != 5} {
+    puts "Usage: ns $argv0 <red-type(0=>red, 1=>fxred)> <area_length> <number_of_nodes> <number_of_flows> <packets_per_sec>"
+    exit 1
+}
+
+if {[lindex $argv 0] != 0 && [lindex $argv 0] != 1} {
+    puts "RED type must be 0 or 1"
     exit 1
 }
 
@@ -23,16 +28,16 @@ set val(ant)            Antenna/OmniAntenna
 set val(ll)             LL
 set val(ifq)            Queue/RED
 set val(ifqlen)         50
-set val(hLen)           [lindex $argv 0]
-set val(vLen)           [lindex $argv 1]
+set val(redtype)        [lindex $argv 0]
+set val(len)            [lindex $argv 1]
 set val(nn)             [lindex $argv 2]
 set val(nf)             [lindex $argv 3]
-set val(tstart)         5.0
-set val(tend)           100.0
+set val(tstart)         0.5
+set val(tend)           10.0
 set val(vmin)           0
 set val(vmax)           0
 set val(energymodel)    EnergyModel		;# Energy Model
-set val(initialenergy)  100			    ;# value
+set val(initialenergy)  1000 	        ;# value
 # queue parameters
 set val(qthresh)        10
 set val(qmaxthresh)     30
@@ -49,6 +54,8 @@ Queue/RED set bytes_ false
 Queue/RED set queue_in_bytes_ false
 Queue/RED set gentle_ false
 Queue/RED set min_pcksize_ $val(qminpcksize)
+Queue/RED set fxred_ $val(redtype)
+Queue/RED set c_ 2
 
 #trace file
 set traceFile [open trace.tr w]
@@ -56,11 +63,11 @@ $ns trace-all $traceFile
 
 #nam file
 set namFile [open animation.nam w]
-$ns namtrace-all-wireless $namFile $val(hLen) $val(vLen)
+$ns namtrace-all-wireless $namFile $val(len) $val(len)
 
 # topology: to keep track of node movements
 set topo [new Topography]
-$topo load_flatgrid $val(hLen) $val(vLen)
+$topo load_flatgrid $val(len) $val(len)
 
 create-god $val(nn)
 
@@ -83,22 +90,23 @@ $ns node-config -adhocRouting $val(rp) \
 		-channel $chan_1_ \
         -energyModel $val(energymodel) \
         -initialEnergy $val(initialenergy) \
-        -rxPower 35.28e-3 \
-        -txPower 31.32e-3 \
-        -idlePower 712e-6 \
-        -sleepPower 144e-9 
+        -rxPower 0.5 \
+        -txPower 0.9 \
+        -idlePower 0.45 \
+        -sleepPower 0.05 
 
+expr srand(87)
 # Generate nodes at random positions
 set points []
 for {set i 0} {$i < $val(nn)} {incr i} {
     # global $node_($i)
 
-    set x [expr rand() * $val(hLen)]
-    set y [expr rand() * $val(vLen)]
+    set x [expr rand() * $val(len)]
+    set y [expr rand() * $val(len)]
 
     while {[lsearch -all -inline $points [list $x $y]] != {}} {
-        set x [expr rand() * $val(hLen)]
-        set y [expr rand() * $val(vLen)]
+        set x [expr rand() * $val(len)]
+        set y [expr rand() * $val(len)]
     }
 
     set point [list $x $y]
@@ -115,8 +123,8 @@ for {set i 0} {$i < $val(nn)} {incr i} {
 
     # Set node movement
     set tmov [expr (rand() * ($val(tend) - $val(tstart)) + $val(tstart))]   ;# start moving at random time
-    set destX [expr rand() * $val(hLen)]                                    ;# move to random position
-    set destY [expr rand() * $val(vLen)]                                    ;# move to random position  
+    set destX [expr rand() * $val(len)]                                    ;# move to random position
+    set destY [expr rand() * $val(len)]                                    ;# move to random position  
     set speed [expr (rand() * ($val(vmax) - $val(vmin)) + $val(vmin))]      ;# move at random speed
     $ns at $tmov "$node_($i) \
         setdest $destX \
@@ -131,32 +139,32 @@ puts "Source node: $srcNodeNum $node_($srcNodeNum)"
 
 # Create random flows
 for {set i 0} {$i < $val(nf)} {incr i} {
-    # Create a UDP agent and attach it to source node
-    set udp_($i) [new Agent/UDP]
-    $ns attach-agent $node_($srcNodeNum) $udp_($i)
+    # Create a tcp agent and attach it to source node
+    set tcp_($i) [new Agent/TCP/Reno]
+    $ns attach-agent $node_($srcNodeNum) $tcp_($i)
     # select a node as a sink
     set sinkNodeNum [expr int(rand() * $val(nn))]
     while {$sinkNodeNum == $srcNodeNum} {
         set sinkNodeNum [expr int(rand() * $val(nn))]
     }
     # puts "Sink node: $sinkNodeNum $node_($sinkNodeNum)"
-    # Create a null agent and attach it to sink node
-    set null_($i) [new Agent/Null]
-    $ns attach-agent $node_($sinkNodeNum) $null_($i)
+    # Create a tcp sink agent and attach it to sink node
+    set sink_($i) [new Agent/TCPSink]
+    $ns attach-agent $node_($sinkNodeNum) $sink_($i)
 
     # Create the flow
-    $ns connect $udp_($i) $null_($i)
+    $ns connect $tcp_($i) $sink_($i)
     
-    # Attach an exponential traffic generator to the flow
-    set exp_($i) [new Application/Traffic/Exponential]
-    $exp_($i) set packetSize_ 512
-    $exp_($i) set burst_time_ 500ms
-    $exp_($i) set idle_time_ 500ms
-    $exp_($i) set rate_ 100k
+    # Attach an ftp traffic generator to the flow
+    set ftp_($i) [new Application/FTP]
+    $ftp_($i) set packetSize_ 512
+    $ftp_($i) set burst_time_ 500ms
+    $ftp_($i) set idle_time_ 500ms
+    $ftp_($i) set rate_ 100k
 
-    $exp_($i) attach-agent $udp_($i)
+    $ftp_($i) attach-agent $tcp_($i)
 
-    $ns at $val(tstart) "$exp_($i) start"
+    $ns at $val(tstart) "$ftp_($i) start"
 }
 
 # Tell nodes when the simulation ends

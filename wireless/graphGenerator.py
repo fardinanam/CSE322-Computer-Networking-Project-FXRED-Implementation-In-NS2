@@ -2,11 +2,17 @@ import matplotlib.pyplot as plt
 import sys
 import os
 
-def plotGraph(xs, ys, xLabel : str, yLabel : str, title : str, fileName : str):
+graph_folder = 'graphs'
+
+def plotGraph(xs, ys1, ys2, xLabel : str, yLabel : str, title : str, fileName : str):
+    print("plotGraph\n:")
+    print(f"xs: {xs}\nys1: {ys1}\nys2: {ys2}\nxLabel: {xLabel}\nyLabel: {yLabel}\ntitle: {title}\nfileName: {fileName}\n")
     fig, ax = plt.subplots()
-    ax.plot(xs, ys, color="blue", linestyle='dashed')
-    ax.scatter(xs, ys, color="red")
-    ax.grid(True)
+    ax.plot(xs, ys1, color="red", linestyle='dashed', label='RED')
+    ax.scatter(xs, ys1, color="red")
+    ax.plot(xs, ys2, color="blue", linestyle='dashed', label='FXRED')
+    ax.scatter(xs, ys2, color="blue")
+    # ax.grid(True)
 
     # give plot a title
     ax.set_title(title)
@@ -16,95 +22,144 @@ def plotGraph(xs, ys, xLabel : str, yLabel : str, title : str, fileName : str):
     ax.set_ylabel(yLabel)
     
     # save the plot as a file
-    fig.savefig('fxred_graphs/'+fileName)
+    fig.savefig(graph_folder + '/' +fileName)
     
     # close the plot file
     plt.close(fig)
     
 
-def makeTitleAndCreateGraphs(varyingParam : str, xs : list, throughputs : list, avgDelays : list, deliveryRatios : list, dropRatios):
-    xLabel = varyingParam
-    
-    yLabel = 'Throughput'
-    title = yLabel + ' vs ' + varyingParam
-    yLabel = yLabel + ' (kbps)'
-    plotGraph(xs, throughputs, xLabel, yLabel, title, title+'.png')
-
-    yLabel = 'Average Delay'
-    title = yLabel + ' vs ' + varyingParam
-    yLabel = yLabel + ' (sec)'
-    plotGraph(xs, avgDelays, xLabel, yLabel, title, title+'.png')
-
-    yLabel = 'Delivery Ratio'
-    title = yLabel + ' vs ' + varyingParam
-    plotGraph(xs, deliveryRatios, xLabel, yLabel, title, title+'.png')
-
-    yLabel = 'Drop Ratio'
-    title = yLabel + ' vs ' + varyingParam
-    plotGraph(xs, dropRatios, xLabel, yLabel, title, title+'.png')
-
-
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 graphGenerator.py <input_file>")
+def makeTitleAndCreateGraphs(data1 : dict, data2 : dict):
+    print("makeTitleAndCreateGraphs\n:")
+    if data1['varyingParam'] != data2['varyingParam']:
+        print("Error: Varying param not same")
         exit(1)
     
-    if not os.path.isdir('fxred_graphs'):
-        os.mkdir('fxred_graphs')
+    if data1['xs'] != data2['xs']:
+        print("Error: X values not same")
+        exit(1)
+    
+    print(f"varying param: {data1['varyingParam']}")
+    xLabel = data1.get('varyingParam')
+    xs = data1.get('xs')
+    throughput1 = data1.get('throughput')
+    throughput2 = data2.get('throughput')
+    avgDelay1 = data1.get('avgDelay')
+    avgDelay2 = data2.get('avgDelay')
+    deliveryRatio1 = data1.get('deliveryRatio')
+    deliveryRatio2 = data2.get('deliveryRatio')
+    dropRatio1 = data1.get('dropRatio')
+    dropRatio2 = data2.get('dropRatio')
+    energyConsumption1 = data1.get('energyConsumption')
+    energyConsumption2 = data2.get('energyConsumption')
+    
+    yLabel = 'Throughput'
+    title = yLabel + ' vs ' + xLabel
+    yLabel = yLabel + ' (kbps)'
+    plotGraph(xs, throughput1, throughput2, xLabel, yLabel, title, title+'.png')
 
-    varyingParamIdx = -1 # packets per sec = 1, no. of nodes = 2, no. of flows = 3
-    pktspersec = []
-    nodes = []
-    flows = []
+    yLabel = 'Average Delay'
+    title = yLabel + ' vs ' + xLabel
+    yLabel = yLabel + ' (sec)'
+    plotGraph(xs, avgDelay1, avgDelay2, xLabel, yLabel, title, title+'.png')
 
-    throughput = []
-    avgDelay = []
-    deliveryRatio = []
-    dropRatio = []
+    yLabel = 'Delivery Ratio'
+    title = yLabel + ' vs ' + xLabel
+    plotGraph(xs, deliveryRatio1, deliveryRatio2, xLabel, yLabel, title, title+'.png')
 
-    with open(sys.argv[1], 'r') as inputFile:
-        for line in inputFile:
-            if line.startswith('='):
-                varyingParamIdx += 1
+    yLabel = 'Drop Ratio'
+    title = yLabel + ' vs ' + xLabel
+    plotGraph(xs, dropRatio1, dropRatio2, xLabel, yLabel, title, title+'.png')
 
-                if varyingParamIdx < 1: continue
+    yLabel = 'Energy Consumption'
+    title = yLabel + ' vs ' + xLabel
+    plotGraph(xs, energyConsumption1, energyConsumption2, xLabel, yLabel, title, title+'.png')
 
-                varyingParam = None
-                xs = []
-                
-                if varyingParamIdx == 1:
-                    varyingParam = 'Packets Per Second'
-                    xs = pktspersec
-                elif varyingParamIdx == 2:
-                    varyingParam = 'Number of Nodes'
-                    xs = nodes
-                elif varyingParamIdx == 3:
-                    varyingParam = 'Number of Flows'
-                    xs = flows
-                
-                # print(f"Varying param: {varyingParam}")
-                makeTitleAndCreateGraphs(varyingParam, xs, throughput, avgDelay, deliveryRatio, dropRatio)
-                
-                throughput = []
-                avgDelay = []
-                deliveryRatio = []
-                dropRatio = []
-            elif line.startswith('Packets Per Sec'):
-                # print(line, line.split(sep=" ")[-1])
-                pktspersec.append(int(line.split(sep=" ")[-1]))
-            elif line.startswith('Number of Nodes'):
-                nodes.append(int(line.split(sep=" ")[-1]))
-            elif line.startswith('Number of Flows'):
-                flows.append(int(line.split(sep=" ")[-1]))
-            elif line.startswith('varying') or line.startswith('-'):
-                continue
-            else:
-                metrices = line.split(sep=" ")
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Usage: python3 graphGenerator.py <red_input_file> <fxred_input_file>")
+        exit(1)
+    
+    if not os.path.isdir(graph_folder):
+        os.mkdir(graph_folder)
+    
+    data = [[],[]] # list of all data dictionaries
+    resultFiles = [sys.argv[1], sys.argv[2]]
+    for i in range(0, 2):
+        varyingParamIdx = -1 # packets per sec = 1, no. of nodes = 2, no. of flows = 3, area size = 4
+        areaSize = []
+        pktspersec = []
+        nodes = []
+        flows = []
 
-                if len(metrices) < 4:
+        throughput = []
+        avgDelay = []
+        deliveryRatio = []
+        dropRatio = []
+        energyConsumption = []
+        
+        with open(resultFiles[i], 'r') as inputFile:
+            for line in inputFile:
+                if line.startswith('='):
+                    varyingParamIdx += 1
+
+                    if varyingParamIdx < 1: continue
+
+                    varyingParam = None
+                    xs = []
+                    
+                    if varyingParamIdx == 1:
+                        varyingParam = 'Packets Per Second'
+                        xs = pktspersec
+                    elif varyingParamIdx == 2:
+                        varyingParam = 'Number of Nodes'
+                        xs = nodes
+                    elif varyingParamIdx == 3:
+                        varyingParam = 'Number of Flows'
+                        xs = flows
+                    elif varyingParamIdx == 4:
+                        varyingParam = 'Area Size'
+                        xs = areaSize
+                    
+                    # print(f"Varying param: {varyingParam}")
+                    # makeTitleAndCreateGraphs(varyingParam, xs, throughput, avgDelay, deliveryRatio, dropRatio)
+                    data[i].append({
+                        'varyingParam' : varyingParam,
+                        'xs' : xs,
+                        'throughput' : throughput,
+                        'avgDelay' : avgDelay,
+                        'deliveryRatio' : deliveryRatio,
+                        'dropRatio' : dropRatio,
+                        'energyConsumption' : energyConsumption
+                    })
+                    
+                    throughput = []
+                    avgDelay = []
+                    deliveryRatio = []
+                    dropRatio = []
+                    energyConsumption = []
+                elif line.startswith('Packets Per Sec'):
+                    # print(line, line.split(sep=" ")[-1])
+                    pktspersec.append(int(line.split(sep=" ")[-1]))
+                elif line.startswith('Number of Nodes'):
+                    nodes.append(int(line.split(sep=" ")[-1]))
+                elif line.startswith('Number of Flows'):
+                    flows.append(int(line.split(sep=" ")[-1]))
+                elif line.startswith('Area Size'):
+                    areaSize.append(int(line.split(sep=" ")[-1]))
+                elif line.startswith('varying') or line.startswith('-'):
                     continue
+                else:
+                    metrices = line.split(sep=" ")
 
-                throughput.append(float(metrices[0])/1000)
-                avgDelay.append(float(metrices[1]))
-                deliveryRatio.append(float(metrices[2]))
-                dropRatio.append(float(metrices[3]))
+                    if len(metrices) < 4:
+                        continue
+
+                    throughput.append(float(metrices[0])/1000)
+                    avgDelay.append(float(metrices[1]))
+                    deliveryRatio.append(float(metrices[2]))
+                    dropRatio.append(float(metrices[3]))
+                    energyConsumption.append(float(metrices[4]))
+    
+    for i in range(0, len(data[1])):
+        # print(f"data1: {data[0][i]}\ndata2: {data[1][i]}\n")
+        makeTitleAndCreateGraphs(data[0][i], data[1][i])

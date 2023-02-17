@@ -9,6 +9,8 @@ BEGIN {
     simEndTime = 0;
 
     headerBytes = 20;
+
+    totalEnergy = 0;
 }
 
 {
@@ -19,6 +21,7 @@ BEGIN {
     packetId = $6;
     packetType = $7;
     packetBytes = $8;
+    energyValue = $7
 
     # Eliminate the underscores from the node ID
     sub(/^_*/, "", node)
@@ -29,7 +32,7 @@ BEGIN {
         simStartTime = eventStartTime;
     }
 
-    if (layerType == "AGT" && packetType == "exp") {
+    if (layerType == "AGT" && (packetType == "tcp" || packetType == "udp" || packetType == "cbr")) {
         if (eventType == "s") {
             sentPackets++;
             packetSentTime[packetId] = eventStartTime;
@@ -41,12 +44,17 @@ BEGIN {
             } else {
                 totalDelay += packetTransmitTime;
                 totalReceivedBytes += packetBytes - headerBytes;
+                # print "bytes: ", packetBytes - headerBytes;
                 receivedPackets++;
             }
         }
     }
 
-    if (packetType == "exp" && eventType == "D") {
+    if (eventType == "N") {
+        totalEnergy += energyValue;
+    }
+
+    if (packetType == "tcp" && eventType == "D") {
         droppedPackets++;
     }
 }
@@ -65,6 +73,7 @@ END {
     # print "Simulation Time: ", simTime;
     # print "Total Packets Sent: ", sentPackets;
     # print "Total Packets Received: ", receivedPackets;
+    # print "Total Bytes Received: ", totalReceivedBytes;
     # print "Total Packets Dropped: ", droppedPackets;
 
     # print "------------------------------------------------------";
@@ -72,6 +81,7 @@ END {
     # print "Average Delay:", avgDelay, "sec";
     # print "Delivery Ratio:", deliveryRatio;
     # print "Drop Ratio:", dropRatio;
+    # print "Total Energy Consumption:", totalEnergy;
 
-    print throughput, avgDelay, deliveryRatio, dropRatio;
+    print throughput, avgDelay, deliveryRatio, dropRatio, totalEnergy;
 }
