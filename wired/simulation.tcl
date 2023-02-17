@@ -1,9 +1,14 @@
-if {$argc != 3} {
-    puts "Usage: ns $argv0 <number_of_nodes> <number_of_flows> <packets_per_second>"
+if {$argc != 4} {
+    puts "Usage: ns $argv0 <red-type(0=>red, 1=>fxred)> <number_of_nodes> <number_of_flows> <packets_per_second>"
     exit 1
 }
 
-if {[lindex $argv 0] < 4 || [lindex $argv 0] % 2} {
+if {[lindex $argv 0] != 0 && [lindex $argv 0] != 1} {
+    puts "RED type must be 0 or 1"
+    exit 1
+}
+
+if {[lindex $argv 1] < 4 || [lindex $argv 1] % 2} {
     puts "Number of nodes must be even and at least 4"
     exit 1
 }
@@ -12,9 +17,10 @@ set ns [new Simulator]
 
 #======================
 # define options
-set val(nn) [lindex $argv 0]
-set val(nf) [lindex $argv 1]
-set val(pktpersec) [lindex $argv 2]
+set val(redtype) [lindex $argv 0] 
+set val(nn) [lindex $argv 1]
+set val(nf) [lindex $argv 2]
+set val(pktpersec) [lindex $argv 3]
 set val(qlimit) 30
 set val(tstart) 0.5
 set val(tend) 10
@@ -27,7 +33,7 @@ Queue/RED set bytes_ false
 Queue/RED set queue_in_bytes_ false
 Queue/RED set gentle_ false
 Queue/RED set mean_pktsize_ 1000
-Queue/RED set fxred_ true
+Queue/RED set fxred_ $val(redtype)
 Queue/RED set c_ 2
 
 set namFile [open animation.nam w]
