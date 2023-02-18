@@ -116,9 +116,9 @@ struct edp {
 	/*
 	 * Parameters for FXRED
 	 */
-	double c;		/* FXRED: constant c which should be greater than 2 */
+	double c; /* FXRED: constant c which should be greater than 2 */
 	// double gamma;		/* FXRED: drop mode regulator */
-	int fxred;		/* FXRED: enable/disable FXRED */
+	int fxred; /* FXRED: enable/disable FXRED */
 };
 
 /*
@@ -135,7 +135,7 @@ struct edv {
 	double v_c;		/* used for "gentle" mode */
 	double v_d;		/* used for "gentle" mode */
 	int count;		/* # of packets since last drop */
-	int count_bytes;	/* # of bytes since last drop */
+	int count_bytes;		 /* # of bytes since last drop */
 	double count_start_time; /* time when the count is 0 */
 	int old;		/* 0 when average queue first exceeds thresh */
 	TracedDouble cur_max_p;	//current max_p
@@ -155,7 +155,7 @@ class REDQueue : public Queue {
 	void initParams();
 	int command(int argc, const char*const* argv);
 	void enque(Packet* pkt);
-	virtual Packet *pickPacketForECN(Packet *pkt);
+	virtual Packet *pickPacketForECN(Packet* pkt);
 	virtual Packet *pickPacketToDrop();
 	Packet* deque();
 	void initialize_params();
@@ -217,7 +217,7 @@ class REDQueue : public Queue {
 	edv edv_;		/* early-drop variables */
 	int first_reset_;       /* first time reset() is called */
 
-	double getDataArrivalRate();	/* for FXRED */
+	double getDataArrivalRate(); /* for FXRED */
 
 	void print_edp();	// for debugging
 	void print_edv();	// for debugging

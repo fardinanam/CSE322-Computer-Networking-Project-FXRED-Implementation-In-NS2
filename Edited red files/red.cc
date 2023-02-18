@@ -150,8 +150,8 @@ REDQueue::REDQueue(const char * trace) : link_(NULL), de_drop_(NULL), EDTrace(NU
 	bind("prob1_", &edv_.v_prob1);		    // dropping probability
 	bind("curq_", &curq_);			    // current queue size
 	bind("cur_max_p_", &edv_.cur_max_p);        // current max_p
-	bind("c_", &edp_.c);			    // FXRED param
-	bind_bool("fxred_", &edp_.fxred);	    // FXRED param
+	bind("c_", &edp_.c);						// FXRED param
+	bind_bool("fxred_", &edp_.fxred);			// FXRED param
 
 	q_ = new PacketQueue();			    // underlying queue
 	pq_ = q_;
@@ -249,11 +249,10 @@ void REDQueue::initParams()
 	edp_.feng_adaptive = 0;
 	edp_.ptc = 0.0;
 	edp_.delay = 0.0;
-
 	/* FXRED */
 	edp_.fxred = 0;
 	edp_.c = 2.0;
-	
+
 	edv_.v_ave = 0.0;
 	edv_.v_prob1 = 0.0;
 	edv_.v_slope = 0.0;
@@ -262,7 +261,7 @@ void REDQueue::initParams()
 	edv_.v_b = 0.0;
 	edv_.v_c = 0.0;
 	edv_.v_d = 0.0;
-	edv_.count = 0.0;
+	edv_.count = 0;
 	edv_.count_bytes = 0;
 	edv_.count_start_time = 0.0;
 	edv_.old = 0;
@@ -304,12 +303,9 @@ void REDQueue::reset()
 	 
 	edv_.v_ave = 0.0;
 	edv_.v_slope = 0.0;
-	if (edp_.fxred) {
-		edv_.count = -1;
-	}
-	else
-		edv_.count = 0;
+	edv_.count = 0;
 	edv_.count_bytes = 0;
+	edv_.count_start_time = Scheduler::instance().clock();
 	edv_.old = 0;
 	double th_diff = (edp_.th_max - edp_.th_min);
 	if (th_diff == 0) { 
@@ -448,66 +444,71 @@ REDQueue::calculate_p_new(double v_ave, double th_max, int gentle, double v_a,
 {
 	double p;
 
-	if (edp_.fxred) 
-	{	
+	if (edp_.fxred)
+	{
 		double miu = link_->bandwidth();
 		// printf("data arrival rate: %f, miu: %f\n", getDataArrivalRate(), miu);
 		double rho = getDataArrivalRate() / miu;
 		double gamma = 1;
 		double err = 0.01;
 		double c = edp_.c;
-	
+
 		if (rho < 1.0 - err)
 			gamma = 0.25;
 		else if (rho > 1.0 + err)
-			gamma = c;	
+			gamma = c;
 
-		int k = pow(c, 1/gamma);
+		int k = pow(c, 1 / gamma);
 		double epsilon = pow(c, -gamma);
 
 		double th_min = edp_.th_min;
-		double delta = (th_max + th_min)/2;
+		double delta = (th_max + th_min) / 2;
 
 		if (v_ave < th_min)
 			p = 0.0;
-		else if (th_min <= v_ave && v_ave < delta) 
+		else if (th_min <= v_ave && v_ave < delta)
 		{
-			p = pow((v_ave - th_min)/delta, k);
+			p = pow((v_ave - th_min) / delta, k);
 			p *= 1 - epsilon;
-		}		
+		}
 		else if (delta <= v_ave && v_ave < th_max)
 		{
-			p = 2 * epsilon * (v_ave - delta)/(th_max - th_min);
+			p = 2 * epsilon * (v_ave - delta) / (th_max - th_min);
 			p += 1 - epsilon;
 		}
 		else
 			p = 1.0;
-		
-		// printf("rho: %f, gamma: %f, k: %d, epsilon: %f, th_min: %f, delta: %f\n", 
+
+		// printf("rho: %f, gamma: %f, k: %d, epsilon: %f, th_min: %f, delta: %f\n",
 		// 	rho, gamma, k, epsilon, th_min, delta);
 	}
 	else
 	{
-		if (gentle && v_ave >= th_max) {
+		if (gentle && v_ave >= th_max)
+		{
 			// p ranges from max_p to 1 as the average queue
-			// size ranges from th_max to twice th_max 
+			// size ranges from th_max to twice th_max
 			p = v_c * v_ave + v_d;
-			} else if (!gentle && v_ave >= th_max) { 
-					// OLD: p continues to range linearly above max_p as
-					// the average queue size ranges above th_max.
-					// NEW: p is set to 1.0 
-					p = 1.0;
-			} else {
-					// p ranges from 0 to max_p as the average queue
-					// size ranges from th_min to th_max 
-					p = v_a * v_ave + v_b;
-					// p = (v_ave - th_min) / (th_max - th_min)
-					p *= max_p; 
-			}
+		}
+		else if (!gentle && v_ave >= th_max)
+		{
+			// OLD: p continues to range linearly above max_p as
+			// the average queue size ranges above th_max.
+			// NEW: p is set to 1.0
+			p = 1.0;
+		}
+		else
+		{
+			// p ranges from 0 to max_p as the average queue
+			// size ranges from th_min to th_max
+			p = v_a * v_ave + v_b;
+			// p = (v_ave - th_min) / (th_max - th_min)
+			p *= max_p;
+		}
 		if (p > 1.0)
 			p = 1.0;
 	}
-	
+
 	// printf("drop probability: %f\n", p);
 	return p;
 }
@@ -531,39 +532,46 @@ REDQueue::calculate_p(double v_ave, double th_max, int gentle, double v_a,
 double
 REDQueue::modify_p(double p, int count, int count_bytes, int bytes, 
    int mean_pktsize, int wait, int size)
-{	
-	if (edp_.fxred) 
+{
+	if (edp_.fxred)
 	{
 		p /= (1 - count * p);
 	}
-	else 
+	else
 	{
-		double count1 = (double) count;
+		double count1 = (double)count;
 		if (bytes)
-			count1 = (double) (count_bytes/mean_pktsize);
-		if (wait) {
+			count1 = (double)(count_bytes / mean_pktsize);
+		if (wait)
+		{
 			if (count1 * p < 1.0)
 				p = 0.0;
 			else if (count1 * p < 2.0)
 				p /= (2.0 - count1 * p);
 			else
 				p = 1.0;
-		} else {
+		}
+		else
+		{
 			if (count1 * p < 1.0)
 				p /= (1.0 - count1 * p);
 			else
 				p = 1.0;
 		}
-		if (bytes && p < 1.0) {
+		if (bytes && p < 1.0)
+		{
 			p = (p * size) / mean_pktsize;
-			//p = p * (size / mean_pktsize);
-
+			// p = p * (size / mean_pktsize);
 		}
 		if (p > 1.0)
 			p = 1.0;
 	}
- 	return p;
+	return p;
 }
+
+/*
+ * 
+ */
 
 /*
  * should the packet be dropped/marked due to a probabilistic drop?
@@ -615,6 +623,7 @@ REDQueue::drop_early(Packet* pkt)
 		edv_.count = 0;
 		edv_.count_bytes = 0;
 		edv_.count_start_time = Scheduler::instance().clock();
+
 		hdr_flags* hf = hdr_flags::access(pickPacketForECN(pkt));
 		if (edp_.setbit && hf->ect() && 
                      (!edp_.use_mark_p || edv_.v_prob1 < edp_.mark_p)) { 
@@ -626,6 +635,19 @@ REDQueue::drop_early(Packet* pkt)
 		}
 	}
 	return (0);			// no DROP/mark
+}
+
+/*
+ * Calculates and returns the data arrival rate in bytes/sec.
+ */
+double REDQueue::getDataArrivalRate()
+{
+	double elapsed_time = Scheduler::instance().clock() - edv_.count_start_time;
+	if (elapsed_time == 0.0)
+		return 0;
+	// printf("REDQueue::getDataArrivalRate(): elapsed_time = %f\n", elapsed_time);
+	double rate = edv_.count_bytes / elapsed_time;
+	return rate;
 }
 
 /*
@@ -662,19 +684,6 @@ REDQueue::pickPacketToDrop()
 }
 
 /*
- * Calculates and returns the data arrival rate in bytes/sec.
- */
-double REDQueue::getDataArrivalRate() 
-{
-	double elapsed_time = Scheduler::instance().clock() - edv_.count_start_time;
-	if (elapsed_time == 0.0)
-		return 0;
-	// printf("REDQueue::getDataArrivalRate(): elapsed_time = %f\n", elapsed_time);
-	double rate = edv_.count_bytes / elapsed_time;
-	return rate;
-}	
-
-/*
  * Receive a new packet arriving at the queue.
  * The average queue size is computed.  If the average size
  * exceeds the threshold, then the dropping probability is computed,
@@ -695,12 +704,18 @@ double REDQueue::getDataArrivalRate()
 #define	DTYPE_FORCED	1	/* a "forced" drop */
 #define	DTYPE_UNFORCED	2	/* an "unforced" (random) drop */
 
-void REDQueue::enque(Packet* pkt) 
+void REDQueue::enque(Packet* pkt)
 {
-	// printf("==========enqueue==========\n");
+
+	/*
+	 * if we were idle, we pretend that m packets arrived during
+	 * the idle period.  m is set to be the ptc times the amount
+	 * of time we've been idle for
+	 */
+
+	/*  print_edp(); */
 	int m = 0;
-	if (idle_)
-	{
+	if (idle_) {
 		// A packet that arrives to an idle queue will never
 		//  be dropped.
 		double now = Scheduler::instance().clock();
@@ -708,40 +723,33 @@ void REDQueue::enque(Packet* pkt)
 		idle_ = 0;
 		// Use idle_pktsize instead of mean_pktsize, for
 		//  a faster response to idle times.
-		if (edp_.cautious == 3)
-		{
-			double ptc = edp_.ptc *
-							edp_.mean_pktsize / edp_.idle_pktsize;
+		if (edp_.cautious == 3) {
+			double ptc = edp_.ptc * 
+			   edp_.mean_pktsize / edp_.idle_pktsize;
 			m = int(ptc * (now - idletime_));
-		}
-		else
-			m = int(edp_.ptc * (now - idletime_));
-		
-		if (edp_.fxred) {
-			edv_.count = -1;
-			edv_.count_bytes = 0;
-		}
+		} else
+                	m = int(edp_.ptc * (now - idletime_));
 	}
 
-	edv_.v_ave = estimator(q_->length(), m + 1, edv_.v_ave, edp_.q_w);
-	register double qavg = edv_.v_ave;
-	// printf("qavg: %f\n", qavg);
-
-	if (summarystats_)
-	{
+	/*
+	 * Run the estimator with either 1 new packet arrival, or with
+	 * the scaled version above [scaled by m due to idle time]
+	 */
+	edv_.v_ave = estimator(qib_ ? q_->byteLength() : q_->length(), m + 1, edv_.v_ave, edp_.q_w);
+	//printf("v_ave: %6.4f (%13.12f) q: %d)\n", 
+	//	double(edv_.v_ave), double(edv_.v_ave), q_->length());
+	if (summarystats_) {
 		/* compute true average queue size for summary stats */
-		Queue::updateStats(qib_ ? q_->byteLength() : q_->length());
+		Queue::updateStats(qib_?q_->byteLength():q_->length());
 	}
 
-	double p = 0;
-	int droptype = DTYPE_NONE;
 	/*
 	 * count and count_bytes keeps a tally of arriving traffic
 	 * that has not been dropped (i.e. how long, in terms of traffic,
 	 * it has been since the last early drop)
 	 */
 
-	hdr_cmn *ch = hdr_cmn::access(pkt);
+	hdr_cmn* ch = hdr_cmn::access(pkt);
 	++edv_.count;
 	edv_.count_bytes += ch->size();
 
@@ -752,22 +760,21 @@ void REDQueue::enque(Packet* pkt)
 	 *	2> if minthresh < ~q < maxthresh, this may be an UNFORCED drop
 	 *	3> if (q+1) > hard q limit, this is a FORCED drop
 	 */
+
+	register double qavg = edv_.v_ave;
+	int droptype = DTYPE_NONE;
 	int qlen = qib_ ? q_->byteLength() : q_->length();
 	int qlim = qib_ ? (qlim_ * edp_.mean_pktsize) : qlim_;
 
-	curq_ = qlen; // helps to trace queue during arrival, if enabled
+	curq_ = qlen;	// helps to trace queue during arrival, if enabled
 
-	if (qavg >= edp_.th_min && qlen > 1)
-	{
-		if (!edp_.use_mark_p &&
+	if (qavg >= edp_.th_min && qlen > 1) {
+		if (!edp_.use_mark_p && 
 			((!edp_.gentle && qavg >= edp_.th_max) ||
-			 (edp_.gentle && qavg >= 2 * edp_.th_max)))
-		{
+			(edp_.gentle && qavg >= 2 * edp_.th_max))) {
 			droptype = DTYPE_FORCED;
-		}
-		else if (edv_.old == 0)
-		{
-			/*
+		} else if (edv_.old == 0) {
+			/* 
 			 * The average queue size has just crossed the
 			 * threshold from below to above "minthresh", or
 			 * from above "minthresh" with an empty queue to
@@ -776,80 +783,60 @@ void REDQueue::enque(Packet* pkt)
 			edv_.count = 1;
 			edv_.count_bytes = ch->size();
 			edv_.old = 1;
-		}
-		else if (drop_early(pkt))
-		{
-			// printf("UNFORCED DROP: avg = %f\n", qavg);
+		} else if (drop_early(pkt)) {
 			droptype = DTYPE_UNFORCED;
 		}
-	}
-	else
-	{
+	} else {
 		/* No packets are being dropped.  */
 		edv_.v_prob = 0.0;
-		edv_.old = 0;
-		if (edp_.fxred) {
-			edv_.count = -1;
-			edv_.count_bytes = 0;
-		}
+		edv_.old = 0;		
 	}
-
-	if (qlen >= qlim)
-	{
-		// printf("FORCED DROP:: qlen = %d, qlim = %d\n", qlen, qlim);
+	if (qlen >= qlim) {
 		// see if we've exceeded the queue size
 		droptype = DTYPE_FORCED;
 	}
 
-	if (droptype == DTYPE_UNFORCED)
-	{
+	if (droptype == DTYPE_UNFORCED) {
 		/* pick packet for ECN, which is dropping in this case */
 		Packet *pkt_to_drop = pickPacketForECN(pkt);
-		/*
+		/* 
 		 * If the packet picked is different that the one that just arrived,
 		 * add it to the queue and remove the chosen packet.
 		 */
-		if (pkt_to_drop != pkt)
-		{
+		if (pkt_to_drop != pkt) {
 			q_->enque(pkt);
 			q_->remove(pkt_to_drop);
 			pkt = pkt_to_drop; /* XXX okay because pkt is not needed anymore */
 		}
 
 		// deliver to special "edrop" target, if defined
-		if (de_drop_ != NULL)
-		{
-
-			// trace first if asked
-			//  if no snoop object (de_drop_) is defined,
-			//  this packet will not be traced as a special case.
-			if (EDTrace != NULL)
+		if (de_drop_ != NULL) {
+	
+		//trace first if asked 
+		// if no snoop object (de_drop_) is defined, 
+		// this packet will not be traced as a special case.
+			if (EDTrace != NULL) 
 				((Trace *)EDTrace)->recvOnly(pkt);
 
 			reportDrop(pkt);
 			de_drop_->recv(pkt);
 		}
-		else
-		{
+		else {
 			reportDrop(pkt);
 			drop(pkt);
 		}
-	}
-	else
-	{
+	} else {
 		/* forced drop, or not a drop: first enqueue pkt */
 		q_->enque(pkt);
 
 		/* drop a packet if we were told to */
-		if (droptype == DTYPE_FORCED)
-		{
+		if (droptype == DTYPE_FORCED) {
 			/* drop random victim or last one */
 			pkt = pickPacketToDrop();
 			q_->remove(pkt);
 			reportDrop(pkt);
 			drop(pkt);
-			if (!ns1_compat_)
-			{
+			if (!ns1_compat_) {
 				// bug-fix from Philip Liu, <phill@ece.ubc.ca>
 				edv_.count = 0;
 				edv_.count_bytes = 0;
@@ -857,7 +844,6 @@ void REDQueue::enque(Packet* pkt)
 			}
 		}
 	}
-
 	return;
 }
 
