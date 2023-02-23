@@ -27,7 +27,7 @@ set val(nn)             [lindex $argv 2]
 set val(nf)             [lindex $argv 3]
 set val(pps)            [lindex $argv 4]
 set val(tstart)         0.5
-set val(tend)           50.0
+set val(tend)           15.0
 set val(energymodel)    EnergyModel		;# Energy Model
 set val(initialenergy)  10000 	        ;# value
 # queue parameters
@@ -133,6 +133,7 @@ for {set i 0} {$i < $val(nf)} {incr i} {
     $ns attach-agent $node_($sinkNodeNum) $sink_($i)
 
     $tcp_($i) set packetSize_ 1000
+    $tcp_($i) set maxseq_ $val(pps)
     # $tcp_($i) set window_ [expr 10 * ($val(pps) / 100)]
     # Create the flow
     $ns connect $tcp_($i) $sink_($i)

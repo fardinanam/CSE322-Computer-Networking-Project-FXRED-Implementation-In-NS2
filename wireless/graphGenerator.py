@@ -21,6 +21,10 @@ def plotGraph(xs, ys1, ys2, xLabel : str, yLabel : str, title : str, fileName : 
     ax.set_xlabel(xLabel)
     ax.set_ylabel(yLabel)
     
+    if yLabel == 'Delivery Ratio' or yLabel == 'Drop Ratio':
+        ax.set_ylim(0, 1)
+            
+    fig.legend(loc='upper right', bbox_to_anchor=(0.85, 0.85), ncol=1)
     # save the plot as a file
     fig.savefig(graph_folder + '/' +fileName)
     
