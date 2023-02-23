@@ -44,9 +44,9 @@ $$
 ## Network Topologies Under Simulation
 **`1. Wired`**
 
-A dumble shaped topology is used where all the source nodes are connected to a single router and similarly all the destination nodes are connected to a single router. Both the routers are connected to each other through a link. The topology is shown below.
+A dumbbell shaped topology is used where all the source nodes are connected to a single router and similarly all the destination nodes are connected to a single router. Both the routers are connected to each other through a link. The topology is shown below.
 
-![Wired Topology](static/images/wired_dumble_topology.png)
+![Wired Topology](static/images/wired_dumbbell_topology.png)
 
 **`2. Wireless`**
 
