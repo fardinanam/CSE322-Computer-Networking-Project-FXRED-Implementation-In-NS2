@@ -14,8 +14,8 @@ set ns [new Simulator]
 #Define options
 set val(chan)           Channel/WirelessChannel
 set val(prop)           Propagation/TwoRayGround
-set val(netif)          Phy/WirelessPhy
-set val(mac)            Mac/802_11
+set val(netif)          Phy/WirelessPhy/802_15_4
+set val(mac)            Mac/802_15_4
 set val(rp)             DSDV
 set val(ant)            Antenna/OmniAntenna
 set val(ll)             LL
@@ -29,12 +29,12 @@ set val(pps)            [lindex $argv 4]
 set val(tstart)         0.5
 set val(tend)           15.0
 set val(energymodel)    EnergyModel		;# Energy Model
-set val(initialenergy)  10000 	        ;# value
+set val(initialenergy)  12   	        ;# value
 # queue parameters
 set val(qthresh)        10
 set val(qmaxthresh)     30
 set val(qweight)        0.002
-set val(qminpcksize)    1000
+set val(qminpcksize)    60
 #===============================================================================
 
 
@@ -132,12 +132,12 @@ for {set i 0} {$i < $val(nf)} {incr i} {
     $ns attach-agent $node_($srcNodeNum) $tcp_($i)
     $ns attach-agent $node_($sinkNodeNum) $sink_($i)
 
-    $tcp_($i) set packetSize_ 1000
+    $tcp_($i) set packetSize_ $val(qminpcksize)
     $tcp_($i) set maxseq_ $val(pps)
     # $tcp_($i) set window_ [expr 10 * ($val(pps) / 100)]
     # Create the flow
     $ns connect $tcp_($i) $sink_($i)
-    $tcp_($i) set fid_ $i
+    # $tcp_($i) set fid_ $i
     
     # Attach an ftp traffic generator to the flow
     set ftp_($i) [new Application/FTP]

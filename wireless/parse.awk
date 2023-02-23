@@ -15,7 +15,7 @@ BEGIN {
 
     headerBytes = 20;
 
-    energyPerNode = 10000;
+    energyPerNode = 12;
     numberOfNodes = 100;
 
     for (i = 0; i < numberOfNodes; i++) {

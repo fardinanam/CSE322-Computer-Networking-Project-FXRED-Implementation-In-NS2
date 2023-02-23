@@ -8,7 +8,7 @@ def plotGraph(xs, ys1, ys2, xLabel : str, yLabel : str, title : str, fileName : 
     print("plotGraph\n:")
     print(f"xs: {xs}\nys1: {ys1}\nys2: {ys2}\nxLabel: {xLabel}\nyLabel: {yLabel}\ntitle: {title}\nfileName: {fileName}\n")
     fig, ax = plt.subplots()
-    ax.plot(xs, ys1, color="red", linestyle='dashed', label='RED')
+    ax.plot(xs, ys1, color="red", label='RED')
     ax.scatter(xs, ys1, color="red")
     ax.plot(xs, ys2, color="blue", linestyle='dashed', label='FXRED')
     ax.scatter(xs, ys2, color="blue")
@@ -20,6 +20,11 @@ def plotGraph(xs, ys1, ys2, xLabel : str, yLabel : str, title : str, fileName : 
     # make axis labels
     ax.set_xlabel(xLabel)
     ax.set_ylabel(yLabel)
+    
+    if yLabel == 'Delivery Ratio' or yLabel == 'Drop Ratio':
+        ax.set_ylim(0, 1)
+            
+    fig.legend(loc='upper right', bbox_to_anchor=(0.85, 0.85), ncol=1)
     
     # save the plot as a file
     fig.savefig(graph_folder + '/' +fileName)

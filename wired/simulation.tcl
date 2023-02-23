@@ -72,28 +72,20 @@ $ns duplex-link-op $node_(r2) $node_(r1) queuePos 0
 for {set i 0} {$i < $val(nf)} {incr i} {
     set source [expr int(rand() * ($val(nn)/2))]
     set dest [expr int(rand() * ($val(nn)/2))]
-    set tcp_($i) [$ns create-connection TCP/Reno $node_(s$source) TCPSink $node_(d$dest) $i]
+    set tcp_($i) [new Agent/TCP]
+    set sink_($i) [new Agent/TCPSink]
+    $ns attach-agent $node_(s$source) $tcp_($i)
+    $ns attach-agent $node_(d$dest) $sink_($i)
+
+    # [$ns create-connection TCP $node_(s$source) TCPSink $node_(d$dest) $i]
+    $tcp_($i) set packetSize_ $val(pktsize)
+    $tcp_($i) set window_ [expr 10 *($val(pktpersec) / 100)]
+
+    $ns connect $tcp_($i) $sink_($i)
+    $tcp_($i) set fid_ $i
 
     set ftp_($i) [new Application/FTP]
-    $ftp_($i) set packetSize_ $val(pktsize)
-    $ftp_($i) set rate_ 10Mb
-    $ftp_($i) set interval_ [expr 1.0 / $val(pktpersec)]
-    # puts "packet rate: $val(pktpersec)"
-    # puts "packet interval: [expr 1.0 / $val(pktpersec)]"
     $ftp_($i) attach-agent $tcp_($i)
-
-    # set udp_($i) [new Agent/UDP]
-    # $ns attach-agent $node_(s$source) $udp_($i)
-    
-    # set cbr_($i) [new Application/Traffic/CBR]
-    # $cbr_($i) set PacketSize_ $val(pktsize)
-    # $cbr_($i) set rate_ $val(pktpersec)
-    # $cbr_($i) attach-agent $udp_($i)
-
-    # set sink_($i) [new Agent/Null]
-    # $ns attach-agent $node_(d$dest) $sink_($i)
-
-    # $ns connect $udp_($i) $sink_($i)
 }
 
 for {set i 0} {$i < $val(nf)} {incr i} {
