@@ -1,10 +1,3 @@
-#1805087	
-#wireless MAC: 802.11	
-#Routing protocol: DSDV	
-#Agent + Application: UDP + Exponential Traffic	
-#Node Positioning: Random	
-#Flow: 1 Source, Random Sink
-
 if {$argc != 5} {
     puts "Usage: ns $argv0 <red-type(0=>red, 1=>fxred)> <area_length> <number_of_nodes> <number_of_flows> <packets_per_sec>"
     exit 1
@@ -21,8 +14,8 @@ set ns [new Simulator]
 #Define options
 set val(chan)           Channel/WirelessChannel
 set val(prop)           Propagation/TwoRayGround
-set val(netif)          Phy/WirelessPhy/802_15_4
-set val(mac)            Mac/802_15_4
+set val(netif)          Phy/WirelessPhy
+set val(mac)            Mac/802_11
 set val(rp)             DSDV
 set val(ant)            Antenna/OmniAntenna
 set val(ll)             LL
@@ -32,12 +25,11 @@ set val(redtype)        [lindex $argv 0]
 set val(len)            [lindex $argv 1]
 set val(nn)             [lindex $argv 2]
 set val(nf)             [lindex $argv 3]
+set val(pps)            [lindex $argv 4]
 set val(tstart)         0.5
-set val(tend)           10.0
-set val(vmin)           0
-set val(vmax)           0
+set val(tend)           50.0
 set val(energymodel)    EnergyModel		;# Energy Model
-set val(initialenergy)  1000 	        ;# value
+set val(initialenergy)  10000 	        ;# value
 # queue parameters
 set val(qthresh)        10
 set val(qmaxthresh)     30
@@ -90,17 +82,15 @@ $ns node-config -adhocRouting $val(rp) \
 		-channel $chan_1_ \
         -energyModel $val(energymodel) \
         -initialEnergy $val(initialenergy) \
-        -rxPower 0.5 \
-        -txPower 0.9 \
-        -idlePower 0.45 \
-        -sleepPower 0.05 
+        -rxPower 1.0 \
+        -txPower 1.0 \
+        -idlePower 1.0 \
+        -sleepPower 0.001 
 
 expr srand(87)
 # Generate nodes at random positions
 set points []
 for {set i 0} {$i < $val(nn)} {incr i} {
-    # global $node_($i)
-
     set x [expr rand() * $val(len)]
     set y [expr rand() * $val(len)]
 
@@ -119,17 +109,7 @@ for {set i 0} {$i < $val(nn)} {incr i} {
     $node_($i) set X_ $x
     $node_($i) set Y_ $y
     $node_($i) set Z_ 0.0
-    $ns initial_node_pos $node_($i) 20  
-
-    # Set node movement
-    set tmov [expr (rand() * ($val(tend) - $val(tstart)) + $val(tstart))]   ;# start moving at random time
-    set destX [expr rand() * $val(len)]                                    ;# move to random position
-    set destY [expr rand() * $val(len)]                                    ;# move to random position  
-    set speed [expr (rand() * ($val(vmax) - $val(vmin)) + $val(vmin))]      ;# move at random speed
-    $ns at $tmov "$node_($i) \
-        setdest $destX \
-        $destY \
-        $speed"
+    $ns initial_node_pos $node_($i) 20 
 }
 
 # select a node as a source 
@@ -139,28 +119,28 @@ puts "Source node: $srcNodeNum $node_($srcNodeNum)"
 
 # Create random flows
 for {set i 0} {$i < $val(nf)} {incr i} {
-    # Create a tcp agent and attach it to source node
-    set tcp_($i) [new Agent/TCP/Reno]
-    $ns attach-agent $node_($srcNodeNum) $tcp_($i)
     # select a node as a sink
     set sinkNodeNum [expr int(rand() * $val(nn))]
     while {$sinkNodeNum == $srcNodeNum} {
         set sinkNodeNum [expr int(rand() * $val(nn))]
     }
-    # puts "Sink node: $sinkNodeNum $node_($sinkNodeNum)"
+
+    # Create a tcp agent and attach it to source node
+    set tcp_($i) [new Agent/TCP]
     # Create a tcp sink agent and attach it to sink node
     set sink_($i) [new Agent/TCPSink]
+    $ns attach-agent $node_($srcNodeNum) $tcp_($i)
     $ns attach-agent $node_($sinkNodeNum) $sink_($i)
 
+    $tcp_($i) set packetSize_ 1000
+    # $tcp_($i) set window_ [expr 10 * ($val(pps) / 100)]
     # Create the flow
     $ns connect $tcp_($i) $sink_($i)
+    $tcp_($i) set fid_ $i
     
     # Attach an ftp traffic generator to the flow
     set ftp_($i) [new Application/FTP]
-    $ftp_($i) set packetSize_ 512
-    $ftp_($i) set burst_time_ 500ms
-    $ftp_($i) set idle_time_ 500ms
-    $ftp_($i) set rate_ 100k
+
 
     $ftp_($i) attach-agent $tcp_($i)
 
@@ -182,5 +162,7 @@ proc finish {} {
     # exec nam animation.nam &
     exit 0
 }
+
+$ns at [expr $val(tend) + 0.0001] "finish"
 
 $ns run

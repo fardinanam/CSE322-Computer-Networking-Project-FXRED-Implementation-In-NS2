@@ -1,4 +1,9 @@
 BEGIN {
+    # if (ARGC != 2) {
+    #     print "Usage: ./parse.awk <number of nodes>";
+    #     exit;
+    # }
+
     receivedPackets = 0;
     sentPackets = 0;
     droppedPackets = 0;
@@ -10,7 +15,12 @@ BEGIN {
 
     headerBytes = 20;
 
-    totalEnergy = 0;
+    energyPerNode = 10000;
+    numberOfNodes = 100;
+
+    for (i = 0; i < numberOfNodes; i++) {
+        energyOfNode[i] = energyPerNode;
+    }
 }
 
 {
@@ -32,11 +42,11 @@ BEGIN {
         simStartTime = eventStartTime;
     }
 
-    if (layerType == "AGT" && (packetType == "tcp" || packetType == "udp" || packetType == "cbr")) {
+    if (layerType == "AGT" && (packetType == "tcp" || packetType == "exp" || packetType == "cbr")) {
         if (eventType == "s") {
             sentPackets++;
             packetSentTime[packetId] = eventStartTime;
-        } else if (eventType == "r") {
+        } else if (eventType == "r") {         
             packetTransmitTime = eventStartTime - packetSentTime[packetId];
 
             if (packetTrasnmitTime < 0) {
@@ -51,10 +61,10 @@ BEGIN {
     }
 
     if (eventType == "N") {
-        totalEnergy += energyValue;
+        energyOfNode[$5] = energyValue;
     }
 
-    if (packetType == "tcp" && eventType == "D") {
+    if ((packetType == "tcp" || packetType == "exp" || packetType == "cbr") && eventType == "D") {
         droppedPackets++;
     }
 }
@@ -66,10 +76,20 @@ END {
     # droppedPackets = sentPackets - receivedPackets;
 
     throughput = (totalReceivedBytes * 8) / simTime;
+    # if (receivedPackets == 0) {
+    #     print "No packets received===============================";
+    # }
     avgDelay = (totalDelay / receivedPackets);
     deliveryRatio = (receivedPackets / sentPackets);
     dropRatio = (droppedPackets / sentPackets);
 
+    totalConsumedEnergy = energyPerNode * numberOfNodes;
+
+    # print "Total energy: ", totalConsumedEnergy;
+
+    for (i = 0; i < numberOfNodes; i++) {
+        totalConsumedEnergy -= energyOfNode[i];
+    }
     # print "Simulation Time: ", simTime;
     # print "Total Packets Sent: ", sentPackets;
     # print "Total Packets Received: ", receivedPackets;
@@ -83,5 +103,5 @@ END {
     # print "Drop Ratio:", dropRatio;
     # print "Total Energy Consumption:", totalEnergy;
 
-    print throughput, avgDelay, deliveryRatio, dropRatio, totalEnergy;
+    print throughput, avgDelay, deliveryRatio, dropRatio, totalConsumedEnergy;
 }

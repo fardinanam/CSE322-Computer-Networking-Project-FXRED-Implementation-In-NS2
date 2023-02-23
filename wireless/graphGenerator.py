@@ -8,7 +8,7 @@ def plotGraph(xs, ys1, ys2, xLabel : str, yLabel : str, title : str, fileName : 
     print("plotGraph\n:")
     print(f"xs: {xs}\nys1: {ys1}\nys2: {ys2}\nxLabel: {xLabel}\nyLabel: {yLabel}\ntitle: {title}\nfileName: {fileName}\n")
     fig, ax = plt.subplots()
-    ax.plot(xs, ys1, color="red", linestyle='dashed', label='RED')
+    ax.plot(xs, ys1, color="red", label='RED')
     ax.scatter(xs, ys1, color="red")
     ax.plot(xs, ys2, color="blue", linestyle='dashed', label='FXRED')
     ax.scatter(xs, ys2, color="blue")
@@ -137,7 +137,7 @@ if __name__ == "__main__":
                     deliveryRatio = []
                     dropRatio = []
                     energyConsumption = []
-                elif line.startswith('Packets Per Sec'):
+                elif line.startswith('Packets per sec'):
                     # print(line, line.split(sep=" ")[-1])
                     pktspersec.append(int(line.split(sep=" ")[-1]))
                 elif line.startswith('Number of Nodes'):
@@ -153,7 +153,8 @@ if __name__ == "__main__":
 
                     if len(metrices) < 4:
                         continue
-
+                    
+                    print(f"extracting {line}")
                     throughput.append(float(metrices[0])/1000)
                     avgDelay.append(float(metrices[1]))
                     deliveryRatio.append(float(metrices[2]))

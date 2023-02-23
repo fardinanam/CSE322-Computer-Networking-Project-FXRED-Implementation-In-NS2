@@ -73,9 +73,15 @@ for {set i 0} {$i < $val(nf)} {incr i} {
     set source [expr int(rand() * ($val(nn)/2))]
     set dest [expr int(rand() * ($val(nn)/2))]
     set tcp_($i) [$ns create-connection TCP/Reno $node_(s$source) TCPSink $node_(d$dest) $i]
-    $tcp_($i) set rate_ $val(pktpersec)
 
-    set ftp_($i) [$tcp_($i) attach-source FTP]
+    set ftp_($i) [new Application/FTP]
+    $ftp_($i) set packetSize_ $val(pktsize)
+    $ftp_($i) set rate_ 10Mb
+    $ftp_($i) set interval_ [expr 1.0 / $val(pktpersec)]
+    # puts "packet rate: $val(pktpersec)"
+    # puts "packet interval: [expr 1.0 / $val(pktpersec)]"
+    $ftp_($i) attach-agent $tcp_($i)
+
     # set udp_($i) [new Agent/UDP]
     # $ns attach-agent $node_(s$source) $udp_($i)
     
