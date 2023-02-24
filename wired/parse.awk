@@ -19,8 +19,8 @@ BEGIN {
     packetId = $12;
 
     # Eliminate the underscores from the node ID
-    sub(/^_*/, "", node)
-    sub(/_*$/, "", node)
+    sub(/^_*/, "", nodeID)
+    sub(/_*$/, "", nodeID)
 
     # Set start time for the simulation
     if (eventStartTime < simStartTime) {

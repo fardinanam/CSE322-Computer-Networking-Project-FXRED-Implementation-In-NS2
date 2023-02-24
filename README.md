@@ -16,9 +16,11 @@ There are some other parameters that are used in the algorithm:
 - $\rho(t)$: $\rho(t) = \lambda(t)/\mu$
 
 Based on traffic load, three states are defined:
-$$State-1: \rho(t) < 1,\newline
+$$ 
+  State-1: \rho(t) < 1,\newline
   State-2: \rho(t) \approx 1,\newline
-  State-r: \rho(t) > 1.$$
+  State-3: \rho(t) > 1. 
+$$
 
 `Probability Function`:
 
@@ -252,7 +254,7 @@ Only the class `REDQueue` is modified. The following changes are made:
     return p;
   }
   ``` 
-  - Finally, the new definition of the function `REDQueue::getDataArrivalRate()` is added:
+- Finally, the new definition of the function `REDQueue::getDataArrivalRate()` is added:
   ```c
   /*
   * Calculates and returns the data arrival rate in bytes/sec.
