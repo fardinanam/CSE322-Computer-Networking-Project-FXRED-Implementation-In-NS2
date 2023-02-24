@@ -16,6 +16,7 @@ There are some other parameters that are used in the algorithm:
 - $\rho(t)$: $\rho(t) = \lambda(t)/\mu$
 
 Based on traffic load, three states are defined:
+
 $$ 
   State-1: \rho(t) < 1,\newline
   State-2: \rho(t) \approx 1,\newline
