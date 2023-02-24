@@ -18,8 +18,8 @@ There are some other parameters that are used in the algorithm:
 Based on traffic load, three states are defined:
 
 $$ 
-  State-1: \rho(t) < 1,\newline
-  State-2: \rho(t) \approx 1,\newline
+  State-1: \rho(t) < 1,\\
+  State-2: \rho(t) \approx 1,\\
   State-3: \rho(t) > 1. 
 $$
 
