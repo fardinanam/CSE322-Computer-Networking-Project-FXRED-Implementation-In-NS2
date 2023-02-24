@@ -3,7 +3,7 @@
 FXRED is a modification of RED algorithm which is used to control the congestion in the network. The main difference between RED and FXRED is that the latter uses a flexible threshold value instead of a fixed threshold value. The threshold value is calculated using the average queue size and the average packet size. The algorithm is described in the paper [Flexible Random Early Detection Algorithm for Queue Management in Routers](https://www.researchgate.net/publication/348165145_Flexible_Random_Early_Detection_Algorithm_for_Queue_Management_in_Routers).
 
 ## Overview of the Algorithm
-In the proposed FXRED, the router's queue with finite capacity is divided into four segments (A, B, C, D) via threshold values $min_{th}$, $\Delta$, $max_{th}$ where $\Delta = 1/2 (min_{th} + max_{th})$.
+In the proposed FXRED, the router's queue with finite capacity is divided into four segments (A, B, C, D) via threshold values $min_{th}$, $\Delta$, $max_{th}$ where $\Delta = \frac{1}{2} (min_{th} + max_{th})$.
 
 ![Queue Segments](static/images/queue_segments.png)
 
@@ -11,19 +11,19 @@ Just like traditional RED and its other variants, in FXRED, average queue length
 $$avg = (1-w)avg' + wq(t)$$
 
 There are some other parameters that are used in the algorithm:
-- $\lambda(t)$: Total data arrival rate in the bottleneck link at time $t$.
+- $\lambda(t)$: Total data arrival rate in the queue at time $t$.
 - $\mu$: Bandwidth of the bottleneck link.
 - $\rho(t)$: $\rho(t) = \lambda(t)/\mu$
 
 Based on traffic load, three states are defined:
 
-$$ 
-  State-1: \rho(t) < 1,\\
+$$
+  State-1: \rho(t) < 1, \\
   State-2: \rho(t) \approx 1,\\
   State-3: \rho(t) > 1. 
 $$
 
-`Probability Function`:
+### **`Probability Function`**:
 
 $$
   p_d = \begin{cases}
@@ -45,13 +45,13 @@ $$
 $$
 
 ## Network Topologies Under Simulation
-**`1. Wired`**
+## **`1. Wired`**
 
 A dumbbell shaped topology is used where all the source nodes are connected to a single router and similarly all the destination nodes are connected to a single router. Both the routers are connected to each other through a link. The topology is shown below.
 
 ![Wired Topology](static/images/wired_dumbbell_topology.png)
 
-**`2. Wireless`**
+## **`2. Wireless`**
 
 Nodes are randomly generated in a square area. For each simulation, a node is selected as source and a number of random nodes are selected as destination. Node configurations are as follows:
 
@@ -85,12 +85,12 @@ The following modifications are made in the NS-2 code to implement the FXRED alg
 
 Two files are changes in the `ns2.35/queue` directory:
 
-**`red.h`** 
+## **`red.h`** 
 - In `struct edp` the following two variables are added:
   ```c
   /*
-    * Parameters for FXRED
-    */
+  * Parameters for FXRED
+  */
   double c; /* FXRED: constant c which should be greater than 2 */
   int fxred; /* FXRED: enable/disable FXRED */
   ```
@@ -104,37 +104,34 @@ Two files are changes in the `ns2.35/queue` directory:
 - A new method in `REDQueue:Queue` is added to calculate data arrival rate:
   ```c
   /*
-    * Calculate data arrival rate
-    */
+  * Calculate data arrival rate
+  */
   double getDataArrivalRate();
   ```
-**`red.cc`**
+## **`red.cc`**
 Only the class `REDQueue` is modified. The following changes are made:
 - To pass parameter from tcl file to the class, the following code is added in `REDQueue::REDQueue()`:
   ```c
   bind("c_", &edp_.c);
-	bind_bool("fxred_", &edp_.fxred);
+  bind_bool("fxred_", &edp_.fxred);
   ```
 - The two new parameters are initialized in `REDQueue::initparams()`:
   ```c
   edp_.fxred = 0;
-	edp_.c = 2.0;
+  edp_.c = 2.0;
 
   edv_.count = 0;
-	edv_.count_bytes = 0;
+  edv_.count_bytes = 0;
   ```
 - In `REDQueue::reset()` just below the line `edv_.count = 0;` the following line is added:
   ```c
   edv_.count_bytes = 0;
-	edv_.count_start_time = Scheduler::instance().clock();
+  edv_.count_start_time = Scheduler::instance().clock();
   ```
   **These two lines are added everywhere where `edv_.count = 0;` is present.**
 
 - The `REDQueue::calculate_p_new()` is modified to calculate the probability function of FXRED.
   ```c
-  /*
-  * Calculate the drop probability.
-  */
   double
   REDQueue::calculate_p_new(double v_ave, double th_max, int gentle, double v_a, 
     double v_b, double v_c, double v_d, double max_p)
@@ -144,7 +141,6 @@ Only the class `REDQueue` is modified. The following changes are made:
     if (edp_.fxred)
     {
       double miu = link_->bandwidth();
-      // printf("data arrival rate: %f, miu: %f\n", getDataArrivalRate(), miu);
       double rho = getDataArrivalRate() / miu;
       double gamma = 1;
       double err = 0.01;
@@ -175,46 +171,17 @@ Only the class `REDQueue` is modified. The following changes are made:
       }
       else
         p = 1.0;
-
-      // printf("rho: %f, gamma: %f, k: %d, epsilon: %f, th_min: %f, delta: %f\n",
-      // 	rho, gamma, k, epsilon, th_min, delta);
     }
     else
     {
-      if (gentle && v_ave >= th_max)
-      {
-        // p ranges from max_p to 1 as the average queue
-        // size ranges from th_max to twice th_max
-        p = v_c * v_ave + v_d;
-      }
-      else if (!gentle && v_ave >= th_max)
-      {
-        // OLD: p continues to range linearly above max_p as
-        // the average queue size ranges above th_max.
-        // NEW: p is set to 1.0
-        p = 1.0;
-      }
-      else
-      {
-        // p ranges from 0 to max_p as the average queue
-        // size ranges from th_min to th_max
-        p = v_a * v_ave + v_b;
-        // p = (v_ave - th_min) / (th_max - th_min)
-        p *= max_p;
-      }
-      if (p > 1.0)
-        p = 1.0;
+      // default RED implementation
     }
 
-    // printf("drop probability: %f\n", p);
     return p;
   }
   ```
 - `REDQueue::modify_p()`:
   ```c
-  /*
-  * Make uniform instead of geometric interdrop periods.
-  */
   double
   REDQueue::modify_p(double p, int count, int count_bytes, int bytes, 
     int mean_pktsize, int wait, int size)
@@ -225,32 +192,7 @@ Only the class `REDQueue` is modified. The following changes are made:
     }
     else
     {
-      double count1 = (double)count;
-      if (bytes)
-        count1 = (double)(count_bytes / mean_pktsize);
-      if (wait)
-      {
-        if (count1 * p < 1.0)
-          p = 0.0;
-        else if (count1 * p < 2.0)
-          p /= (2.0 - count1 * p);
-        else
-          p = 1.0;
-      }
-      else
-      {
-        if (count1 * p < 1.0)
-          p /= (1.0 - count1 * p);
-        else
-          p = 1.0;
-      }
-      if (bytes && p < 1.0)
-      {
-        p = (p * size) / mean_pktsize;
-        // p = p * (size / mean_pktsize);
-      }
-      if (p > 1.0)
-        p = 1.0;
+      // default RED implementation
     }
     return p;
   }
@@ -265,14 +207,14 @@ Only the class `REDQueue` is modified. The following changes are made:
     double elapsed_time = Scheduler::instance().clock() - edv_.count_start_time;
     if (elapsed_time == 0.0)
       return 0;
-    // printf("REDQueue::getDataArrivalRate(): elapsed_time = %f\n", elapsed_time);
+      
     double rate = edv_.count_bytes / elapsed_time;
     return rate;
   }
   ```
 
 ## Results with Graphs:
-**`Wired`**
+## **`Wired`**
 
 ![Average Delay vs Number of Flows](wired/graphs/Average%20Delay%20vs%20Number%20of%20Flows.png)
 
@@ -299,7 +241,7 @@ Only the class `REDQueue` is modified. The following changes are made:
 ![Drop Ratio vs Packets Per Second](wired/graphs/Drop%20Ratio%20vs%20Packets%20Per%20Second.png)
 
 
-**`Wireless`**
+## **`Wireless`**
 
 ![Average Delay vs Number of Flows](wireless/graphs/Average%20Delay%20vs%20Number%20of%20Flows.png)
 
@@ -342,3 +284,10 @@ Only the class `REDQueue` is modified. The following changes are made:
 ![Energy Consumption vs Area Size](wireless/graphs/Energy%20Consumption%20vs%20Area%20Size.png)
 
 ## Summary of Findings:
+From the graphs found after analysing wired topology, we can see that the proposed algorithm works better in terms of end to end average delay but it has a higher drop ratio. This is because the proposed algorithm is more aggressive in dropping packets. The proposed algorithm also has a higher throughput than the default RED algorithm. In terms of delivery ratio, both algorithms have a similar performance.
+
+On the other hand, wireless topology suggests quite a different result. The proposed algorithm has a higher end to end average delay than the default RED algorithm. Delivery ratio and throughput are also lower in FXRED. Drop ratio and energy consumption are slightly higher too. 
+
+## Conclusion:
+
+As we use RED algorithms to control congestion, the dumbbell shaped wired topology is more suitable for simulating the performance of RED algorithms. So, we can rely on the results found in wired topology to conclude that the proposed algorithm is slightly better than the default RED algorithm.
