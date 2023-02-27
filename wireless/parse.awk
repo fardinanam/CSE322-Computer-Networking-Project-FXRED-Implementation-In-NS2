@@ -91,8 +91,6 @@ END {
         totalConsumedEnergy -= energyOfNode[i];
     }
 
-    totalConsumedEnergy *= simTime
-    
     # print "Simulation Time: ", simTime;
     # print "Total Packets Sent: ", sentPackets;
     # print "Total Packets Received: ", receivedPackets;
